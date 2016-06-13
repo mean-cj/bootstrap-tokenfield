@@ -215,8 +215,8 @@
       }
 
       // Normalize label and value
-      attrs.value = $.trim(attrs.value.toString());
-      attrs.label = attrs.label && attrs.label.length ? $.trim(attrs.label) : attrs.value
+      attrs.value = $.trim(attrs[this.options.value].toString());
+      attrs.label = attrs[this.options.label] && attrs[this.options.label].length ? $.trim(attrs[this.options.label]) : attrs[this.options.value]
 
       // Bail out if has no value or label, or label is too short
       if (!attrs.value.length || !attrs.label.length || attrs.label.length <= this.options.minLength) return
@@ -1023,7 +1023,9 @@
     createTokensOnBlur: false,
     delimiter: ',',
     beautify: true,
-    inputType: 'text'
+    inputType: 'text',
+    label:'label',
+    value:'value'
   }
 
   $.fn.tokenfield.Constructor = Tokenfield
