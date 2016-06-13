@@ -68,19 +68,44 @@
       if (pos >= 0) _self._delimiters[index] = '\\' + character;
     });
 
+    //http://stackoverflow.com/questions/754607/
+    function css(a) {
+        var sheets = document.styleSheets, o = {};
+        for (var i in sheets) {
+            var rules = sheets[i].rules || sheets[i].cssRules;
+            for (var r in rules) {
+                if (a.is(rules[r].selectorText)) {
+                    o = $.extend(o, css2json(rules[r].style), css2json(a.attr('style')));
+                }
+            }
+        }
+        return o;
+    }
+    function css2json(css) {
+        var s = {};
+        if (!css) return s;
+        if (css instanceof CSSStyleDeclaration) {
+            for (var i in css) {
+                if ((css[i]).toLowerCase) {
+                    s[(css[i]).toLowerCase()] = (css[css[i]]);
+                }
+            }
+        } else if (typeof css == "string") {
+            css = css.split("; ");
+            for (var i in css) {
+                var l = css[i].split(": ");
+                s[l[0].toLowerCase()] = (l[1]);
+            }
+        }
+        return s;
+    }
+
     // Store original input width
-    var elRules = (window && typeof window.getMatchedCSSRules === 'function') ? window.getMatchedCSSRules( element ) : null
-      , elStyleWidth = element.style.width
-      , elCSSWidth
+
+      var elStyleWidth = element.style.width
+      , elCSSWidth = css( $(element ) ).width
       , elWidth = this.$element.width()
 
-    if (elRules) {
-      $.each( elRules, function (i, rule) {
-        if (rule.style.width) {
-          elCSSWidth = rule.style.width;
-        }
-      });
-    }
 
     // Move original input out of the way
     var hidingPosition = $('body').css('direction') === 'rtl' ? 'right' : 'left',
@@ -202,12 +227,14 @@
 
   , createToken: function (attrs, triggerChange) {
       var _self = this
-
       if (typeof attrs === 'string') {
         attrs = { value: attrs, label: attrs }
       } else {
         // Copy objects to prevent contamination of data sources.
-        attrs = $.extend( {}, attrs )
+        attrs = $.extend( {}, attrs, {
+            value : attrs[this.options.value],
+            label : attrs[this.options.label],
+        });
       }
 
       if (typeof triggerChange === 'undefined') {
@@ -215,8 +242,8 @@
       }
 
       // Normalize label and value
-      attrs.value = $.trim(attrs[this.options.value].toString());
-      attrs.label = attrs[this.options.label] && attrs[this.options.label].length ? $.trim(attrs[this.options.label]) : attrs[this.options.value]
+      attrs.value = $.trim(attrs.value.toString());
+      attrs.label = attrs.label && attrs.label.length ? $.trim(attrs.label) : attrs.value;
 
       // Bail out if has no value or label, or label is too short
       if (!attrs.value.length || !attrs.label.length || attrs.label.length <= this.options.minLength) return
@@ -230,6 +257,13 @@
 
       // Bail out if there if attributes are empty or event was defaultPrevented
       if (!createEvent.attrs || createEvent.isDefaultPrevented()) return
+
+    var stop = false;
+      $.each( this.getTokens() , function(index, token) {
+          if ( token.value === attrs.value || token.label === attrs.value  )
+              stop = true;
+      });
+      if( stop ) return
 
       var $token = $('<div class="token" />')
             .append('<span class="token-label" />')
@@ -338,7 +372,6 @@
           tokens = [tokens];
         }
       }
-
       var _self = this
       $.each(tokens, function (i, attrs) {
         _self.createToken(attrs, triggerChange)
@@ -383,7 +416,7 @@
   , getInput: function() {
     return this.$input.val()
   }
-      
+
   , setInput: function (val) {
       if (this.$input.hasClass('tt-input')) {
           // Typeahead acts weird when simply setting input value to empty,
@@ -893,7 +926,7 @@
       else {
         //temporary reset width to minimal value to get proper results
         this.$input.width(this.options.minWidth);
-        
+
         var w = (this.textDirection === 'rtl')
               ? this.$input.offset().left + this.$input.outerWidth() - this.$wrapper.offset().left - parseInt(this.$wrapper.css('padding-left'), 10) - inputPadding - 1
               : this.$wrapper.offset().left + this.$wrapper.width() + parseInt(this.$wrapper.css('padding-left'), 10) - this.$input.offset().left - inputPadding;
